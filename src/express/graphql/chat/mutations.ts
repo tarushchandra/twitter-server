@@ -1,5 +1,4 @@
 export const mutations = `#graphql
-    createMessage(payload:CreateMessagePayload!): Message
     createGroup(name: String!, targetUserIds: [String]!): Boolean!
     renameGroup(chatId: String!, name: String!): Boolean!
     addMembersToGroup(chatId: String!, targetUserIds: [String]!): Boolean!

@@ -58,14 +58,6 @@ const queries = {
 };
 
 const mutations = {
-  createMessage: async (
-    _: any,
-    { payload }: { payload: CreateMessagePayload },
-    ctx: GraphqlContext
-  ) => {
-    if (!ctx || !ctx.user?.id) return null;
-    return await ChatService.createMessage(ctx.user.id, payload);
-  },
   createGroup: async (
     _: any,
     { targetUserIds, name }: { targetUserIds: string[]; name: string },
@@ -146,6 +138,11 @@ const mutations = {
 
 const extraResolvers = {
   Chat: {
+    latestChatContent: async (parent: Chat) => {
+      const result = await ChatService.getLatestChatContent(parent.id);
+      return result;
+    },
+
     latestMessage: async (parent: Chat, {}, ctx: GraphqlContext) => {
       if (!ctx || !ctx.user?.id) return null;
       return await ChatService.getLatestMessage(ctx.user.id, parent.id);

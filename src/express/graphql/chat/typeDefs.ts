@@ -1,4 +1,6 @@
 export const typeDefs = `#graphql
+    union ChatContentUnion = Message | ChatActivity
+    
     type Chat {
         id: ID!
         name: String
@@ -9,6 +11,7 @@ export const typeDefs = `#graphql
         totalMembersCount: Int
         members: [User]
         messages: [Message]
+        latestChatContent: ChatContentUnion
         latestMessage: Message
         unseenMessagesCount: Int
     }
@@ -49,7 +52,7 @@ export const typeDefs = `#graphql
     }
 
     type Message {
-        id: ID
+        id: ID!
         content: String
         sender: User
         createdAt: String

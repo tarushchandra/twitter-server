@@ -24,7 +24,7 @@ interface ChatHistory {
 }
 
 export class ChatService {
-  private static async findOrCreateChat(
+  public static async findOrCreateChat(
     sessionUserId: string,
     targetUserIds: string[],
     metaData?: ChatMetaData
@@ -446,13 +446,13 @@ export class ChatService {
       const items = [...result!.messages, ...result!.activites];
       items.sort((a, b) => Number(b.createdAt) - Number(a.createdAt));
 
-      // console.log("items -", items);
+      console.log("items -", items);
 
       const chatHistory = items.reduce((acc: ChatHistory[], curr: any) => {
         const createdAtDate = new Date(curr.createdAt).toDateString();
 
         const item = acc.find((x: any) => x.date === createdAtDate);
-        const isSeen = curr.seenBy.find(
+        const isSeen = curr?.seenBy?.find(
           (user: any) => user.id === sessionUserId
         );
 
@@ -519,7 +519,7 @@ export class ChatService {
         return acc;
       }, []);
 
-      // console.log("chatHistory -", chatHistory);
+      console.log("chatHistory -", chatHistory);
 
       return chatHistory;
     } catch (err) {
@@ -529,28 +529,72 @@ export class ChatService {
 
   // ---------------------------------------------------------------------------------
 
-  public static async createMessage(
+  // public static async createMessage(
+  //   sessionUserId: string,
+  //   payload: CreateMessagePayload
+  // ) {
+  //   // console.log("session user -", sessionUserId);
+  //   // console.log("payload -", payload);
+
+  //   const { content, targetUserIds, chatId } = payload;
+  //   let chat: Chat | null = null;
+
+  //   try {
+  //     if (!chatId && targetUserIds)
+  //       chat = await ChatService.findOrCreateChat(sessionUserId, targetUserIds);
+
+  //     const updatedChat = await prismaClient.chat.update({
+  //       where: {
+  //         id: chatId ? chatId : chat?.id,
+  //         members: { some: { userId: sessionUserId } },
+  //       },
+  //       data: {
+  //         messages: {
+  //           create: [{ content, sender: { connect: { id: sessionUserId } } }],
+  //         },
+  //         updatedAt: new Date(Date.now()),
+  //       },
+  //       select: {
+  //         messages: {
+  //           select: { id: true },
+  //           orderBy: { createdAt: "desc" },
+  //           take: 1,
+  //         },
+  //       },
+  //     });
+
+  //     // console.log("updated chat -", updatedChat);
+
+  //     return {
+  //       id: updatedChat.messages[0].id,
+  //       chat,
+  //     };
+  //   } catch (err) {
+  //     return err;
+  //   }
+  // }
+
+  public static async createMessages(
     sessionUserId: string,
-    payload: CreateMessagePayload
+    chatId: string,
+    messages: any[]
   ) {
     // console.log("session user -", sessionUserId);
     // console.log("payload -", payload);
 
-    const { content, targetUserIds, chatId } = payload;
-    let chat: Chat | null = null;
-
     try {
-      if (!chatId && targetUserIds)
-        chat = await ChatService.findOrCreateChat(sessionUserId, targetUserIds);
-
       const updatedChat = await prismaClient.chat.update({
         where: {
-          id: chatId ? chatId : chat?.id,
+          id: chatId,
           members: { some: { userId: sessionUserId } },
         },
         data: {
           messages: {
-            create: [{ content, sender: { connect: { id: sessionUserId } } }],
+            create: messages.map((message) => ({
+              content: message.content,
+              sender: { connect: { id: sessionUserId } },
+              createdAt: new Date(Number(message.createdAt)),
+            })),
           },
           updatedAt: new Date(Date.now()),
         },
@@ -558,17 +602,51 @@ export class ChatService {
           messages: {
             select: { id: true },
             orderBy: { createdAt: "desc" },
-            take: 1,
+            take: messages.length,
           },
         },
       });
 
       // console.log("updated chat -", updatedChat);
 
-      return {
-        id: updatedChat.messages[0].id,
-        chat,
-      };
+      return updatedChat.messages;
+    } catch (err) {
+      return err;
+    }
+  }
+
+  public static async getLatestChatContent(chatId: string) {
+    try {
+      const latestMessage = await prismaClient.message.findFirst({
+        where: { chatId },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 1,
+      });
+
+      const latestChatActivity = await prismaClient.chatActivity.findFirst({
+        where: { chatId },
+        orderBy: {
+          createdAt: "desc",
+        },
+        include: { user: true, targetUser: true },
+        take: 1,
+      });
+
+      // console.log("latestMessage -", latestMessage);
+      // console.log("latestChatActivity -", latestChatActivity);
+
+      if (!latestChatActivity) return latestMessage;
+
+      const result =
+        latestMessage?.createdAt! > latestChatActivity?.createdAt!
+          ? latestMessage
+          : latestChatActivity;
+
+      // console.log("result - ", result);
+
+      return result;
     } catch (err) {
       return err;
     }
