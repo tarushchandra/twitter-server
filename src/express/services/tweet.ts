@@ -86,28 +86,116 @@ class TweetService {
     return signedURL;
   }
 
-  public static async getTweetsFeed(sessionUserId: string) {
+  // public static async getTweetsFeed(
+  //   sessionUserId: string,
+  //   limit: number,
+  //   cursor?: string
+  // ) {
+  //   try {
+  //     const sessionUserFollowings = await UserService.getFollowings(
+  //       sessionUserId,
+  //       sessionUserId
+  //     );
+
+  //     let followingsTweets: any[] = [];
+  //     for (const following of sessionUserFollowings) {
+  //       const tweets = await TweetService.getTweets(following.id);
+  //       followingsTweets.push(tweets);
+  //     }
+  //     const sessionUserTweets: any = await TweetService.getTweets(
+  //       sessionUserId
+  //     );
+
+  //     const result = [];
+  //     for (const tweets of followingsTweets) {
+  //       result.push(...tweets);
+  //     }
+  //     result.push(...sessionUserTweets);
+
+  //     result.sort((a, b) => Number(b?.createdAt) - Number(a?.createdAt));
+  //     return result;
+  //   } catch (err) {
+  //     return err;
+  //   }
+  // }
+
+  public static async getTweetsFeed(
+    sessionUserId: string,
+    limit: number,
+    cursor?: string
+  ) {
     try {
       const sessionUserFollowings = await UserService.getFollowings(
         sessionUserId,
         sessionUserId
       );
+      const followingIds = sessionUserFollowings.map((x: any) => x.id);
 
-      let followingsTweets: any[] = [];
-      for (const following of sessionUserFollowings) {
-        const tweets = await UserService.getTweets(following.id);
-        followingsTweets.push(tweets);
-      }
-      const sessionUserTweets: any = await UserService.getTweets(sessionUserId);
+      const tweets = await prismaClient.tweet.findMany({
+        where: { authorId: { in: [...followingIds, sessionUserId] } },
+        orderBy: { createdAt: "desc" },
+        cursor: cursor ? { id: cursor } : undefined,
+        take: limit + 1,
+        skip: cursor ? 1 : 0,
+      });
 
-      const result = [];
-      for (const tweets of followingsTweets) {
-        result.push(...tweets);
-      }
-      result.push(...sessionUserTweets);
+      const hasNextPage = tweets.length > limit;
+      if (hasNextPage) tweets.pop();
+      return {
+        tweets,
+        nextCursor: hasNextPage ? tweets[tweets.length - 1].id : null,
+      };
+    } catch (err) {
+      return err;
+    }
+  }
 
-      result.sort((a, b) => Number(b?.createdAt) - Number(a?.createdAt));
-      return result;
+  // public static async getTweets(targetUserId: string) {
+  //   try {
+  //     const tweets = await prismaClient.tweet.findMany({
+  //       where: { authorId: targetUserId },
+  //       orderBy: { createdAt: "desc" },
+  //     });
+
+  //     console.log("user tweets -", tweets);
+
+  //     return tweets;
+  //   } catch (err) {
+  //     return err;
+  //   }
+  // }
+
+  public static async getTweets(
+    targetUserId: string,
+    limit: number = 4,
+    cursor?: string
+  ) {
+    try {
+      const tweets = await prismaClient.tweet.findMany({
+        where: { authorId: targetUserId },
+        orderBy: { createdAt: "desc" },
+        cursor: cursor ? { id: cursor } : undefined,
+        take: limit + 1,
+        skip: cursor ? 1 : 0,
+      });
+
+      const hasNextPage = tweets.length > limit;
+      if (hasNextPage) tweets.pop();
+      return {
+        tweets,
+        nextCursor: hasNextPage ? tweets[tweets.length - 1].id : null,
+      };
+    } catch (err) {
+      return err;
+    }
+  }
+
+  public static async getTweetsCount(targetUserId: string) {
+    try {
+      const tweets = await prismaClient.tweet.findMany({
+        where: { authorId: targetUserId },
+      });
+      return tweets.length;
     } catch (err) {
       return err;
     }

@@ -10,6 +10,11 @@ export const typeDefs = `#graphql
         tweetEngagement: TweetEngagement
     }
 
+    type PaginatedTweets {
+        tweets: [Tweet]!
+        nextCursor: String
+    }
+
     input TweetInput {
         content: String
         imageURL: String

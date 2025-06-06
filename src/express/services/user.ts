@@ -611,7 +611,6 @@ class UserService {
         `TOTAL_FOLLOWINGS:${sessionUserId}:${targetUserId}`,
         JSON.stringify(rearrangedFollowings)
       );
-
       return rearrangedFollowings;
     } catch (err) {
       return err;
@@ -759,29 +758,6 @@ class UserService {
       );
 
       return recommendedUsers;
-    } catch (err) {
-      return err;
-    }
-  }
-
-  public static async getTweets(targetUserId: string) {
-    try {
-      const tweets = await prismaClient.tweet.findMany({
-        where: { authorId: targetUserId },
-      });
-      tweets.sort((a, b) => Number(b?.createdAt) - Number(a?.createdAt));
-      return tweets;
-    } catch (err) {
-      return err;
-    }
-  }
-
-  public static async getTweetsCount(targetUserId: string) {
-    try {
-      const tweets = await prismaClient.tweet.findMany({
-        where: { authorId: targetUserId },
-      });
-      return tweets.length;
     } catch (err) {
       return err;
     }

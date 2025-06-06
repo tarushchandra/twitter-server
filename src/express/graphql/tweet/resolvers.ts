@@ -16,6 +16,14 @@ export interface ImageUploadInput {
 const queries = {
   getTweet: async (_: any, { tweetId }: { tweetId: string }) =>
     await TweetService.getTweet(tweetId),
+  getPaginatedTweets: async (
+    _: any,
+    {
+      userId,
+      limit,
+      cursor,
+    }: { userId: string; limit: number; cursor?: string }
+  ) => await TweetService.getTweets(userId, limit, cursor),
   getAllTweets: async () => TweetService.getAllTweets(),
   getSignedURLForUploadingImage: async (
     _: any,
@@ -28,9 +36,13 @@ const queries = {
       payload
     );
   },
-  getTweetsFeed: async (_: any, {}: any, ctx: GraphqlContext) => {
+  getPaginatedTweetsFeed: async (
+    _: any,
+    { limit, cursor }: { limit: number; cursor?: string },
+    ctx: GraphqlContext
+  ) => {
     if (!ctx.user || !ctx.user.id) return null;
-    return await TweetService.getTweetsFeed(ctx.user.id);
+    return await TweetService.getTweetsFeed(ctx.user.id, limit, cursor);
   },
 };
 

@@ -15,7 +15,6 @@ export const typeDefs = `#graphql
         followersCount: Int
         followingsCount: Int
 
-        tweets: [Tweet]
         tweetsCount: Int
     }
 

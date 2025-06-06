@@ -1,6 +1,7 @@
 import { User } from "@prisma/client";
 import UserService from "../../services/user";
 import { GraphqlContext } from "..";
+import TweetService from "../../services/tweet";
 
 const queries = {
   getCustomUserToken: async (
@@ -96,9 +97,8 @@ const extraResolvers = {
       await UserService.getFollowersCount(parent.id),
     followingsCount: async (parent: User) =>
       await UserService.getFollowingsCount(parent.id),
-    tweets: async (parent: User) => await UserService.getTweets(parent.id),
     tweetsCount: async (parent: User) =>
-      await UserService.getTweetsCount(parent.id),
+      await TweetService.getTweetsCount(parent.id),
   },
 };
 
